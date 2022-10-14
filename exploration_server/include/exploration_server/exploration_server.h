@@ -9,6 +9,7 @@
 
 #include <move_base_msgs/MoveBaseAction.h>
 #include <robotnik_navigation_msgs/RobotnikMoveBaseFlexAction.h>
+#include <mbf_msgs/MoveBaseAction.h>
 #include <tf/transform_listener.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -47,12 +48,12 @@ class ExplorationServer
     tf2_ros::TransformListener tf2_listener_;
     bool success_;
     bool moving_;
-    actionlib::SimpleActionClient<robotnik_navigation_msgs::RobotnikMoveBaseFlexAction> move_client_;
+    actionlib::SimpleActionClient<mbf_msgs::MoveBaseAction> move_client_;
     actionlib::SimpleClientGoalState previous_state_;
     ExploreActionServer explore_action_server_;
     boost::mutex move_client_lock_;
     exploration_msgs::ExploreFeedback feedback_;
-    robotnik_navigation_msgs::RobotnikMoveBaseFlexGoal move_client_goal_;
+    mbf_msgs::MoveBaseGoal move_client_goal_;
     boost::shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_;
     boost::shared_ptr<exploration_server::BasePlugin> planner_;
     geometry_msgs::PolygonStamped polygon_;
@@ -82,13 +83,14 @@ class ExplorationServer
     void moveBaseResultCb(const actionlib::SimpleClientGoalState& state,
       const move_base_msgs::MoveBaseResultConstPtr& result);
 
+
     /**
      * @brief Callback tied to the completion of a move_base task
      * @param state State from the move_base client
      * @param result Result from the move_base client
      */
     void moveBaseFlexResultCb(const actionlib::SimpleClientGoalState& state,
-      const robotnik_navigation_msgs::RobotnikMoveBaseFlexResultConstPtr& result);
+      const mbf_msgs::MoveBaseResultConstPtr& result);  
 
     /**
      * @brief Method to cancel the running goal

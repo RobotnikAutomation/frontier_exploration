@@ -21,6 +21,7 @@
   <depend>exploration_msgs</depend>
   <depend>move_base_msgs</depend>
   <depend>robotnik_navigation_msgs</depend>
+  <depend>mbf_msgs</depend>
   <depend>polygon_layer</depend>
   <depend>roscpp</depend>
   <depend>tf</depend>

@@ -22,7 +22,7 @@ ExplorationServer::ExplorationServer(ros::NodeHandle nh, ros::NodeHandle private
   tf2_listener_(tf2_buffer_),
   success_(false),
   moving_(false),
-  move_client_("robotnik_move_base_flex", true),
+  move_client_("move_base_flex/move_base", true),
   previous_state_(actionlib::SimpleClientGoalState::PENDING),
   explore_action_server_(nh,
                         "exploration_server_node",
@@ -88,11 +88,11 @@ void ExplorationServer::moveBaseResultCb(const actionlib::SimpleClientGoalState&
   const move_base_msgs::MoveBaseResultConstPtr& result)
   {
     previous_state_ = state;
-    planner_->addToVisited(move_client_goal_.goal.goal_target_pose[0].pose.position, previous_state_);
+    planner_->addToVisited(move_client_goal_.target_pose.pose.position, previous_state_);
     if (state == actionlib::SimpleClientGoalState::ABORTED)
     {
-        if (move_client_goal_.goal.goal_target_pose[0].pose.position.x == explore_center_.point.x &&
-        move_client_goal_.goal.goal_target_pose[0].pose.position.y == explore_center_.point.y)
+        if (move_client_goal_.target_pose.pose.position.x == explore_center_.point.x &&
+        move_client_goal_.target_pose.pose.position.y == explore_center_.point.y)
         {
           ROS_ERROR("Failed to move to exploration center point. Exploration Failed.");
           return;
@@ -120,14 +120,14 @@ void ExplorationServer::moveBaseResultCb(const actionlib::SimpleClientGoalState&
 }
 
 void ExplorationServer::moveBaseFlexResultCb(const actionlib::SimpleClientGoalState& state,
-  const robotnik_navigation_msgs::RobotnikMoveBaseFlexResultConstPtr& result)
+  const mbf_msgs::MoveBaseResultConstPtr& result)
   {
     previous_state_ = state;
-    planner_->addToVisited(move_client_goal_.goal.goal_target_pose[0].pose.position, previous_state_);
+    planner_->addToVisited(move_client_goal_.target_pose.pose.position, previous_state_);
     if (state == actionlib::SimpleClientGoalState::ABORTED)
     {
-        if (move_client_goal_.goal.goal_target_pose[0].pose.position.x == explore_center_.point.x &&
-        move_client_goal_.goal.goal_target_pose[0].pose.position.y == explore_center_.point.y)
+        if (move_client_goal_.target_pose.pose.position.x == explore_center_.point.x &&
+        move_client_goal_.target_pose.pose.position.y == explore_center_.point.y)
         {
           ROS_ERROR("Failed to move to exploration center point. Exploration Failed.");
           return;
@@ -225,10 +225,7 @@ bool ExplorationServer::inBoundary()
       // send the goal to the move_base client
       feedback_.current_goal = goal_pose;
       boost::unique_lock<boost::mutex> lock(move_client_lock_);
-      move_client_goal_.goal.goal_target_pose.clear();
-      move_client_goal_.goal.goal_target_pose.push_back(goal_pose);
-      move_client_goal_.goal.navigation_type = move_client_goal_.goal.NAVIGATION_TYPE_POINT_TO_POINT;
-      move_client_goal_.goal.goal_target_type = move_client_goal_.goal.GOAL_TARGET_TYPE_CARTESIAN;
+      move_client_goal_.target_pose = goal_pose;
       move_client_.sendGoal(move_client_goal_, boost::bind(&ExplorationServer::moveBaseFlexResultCb, this, _1, _2), 0, 0);
       moving_ = true;
       lock.unlock();
@@ -247,7 +244,7 @@ void ExplorationServer::requestAndSendGoal()
   costmap_ros_->getRobotPose(current_pose);
   feedback_.robot_pose = current_pose;
   // request next goal from planner plugin
-  point_list = planner_->whereToExplore(current_pose, move_client_goal_.goal.goal_target_pose[0].pose.position, previous_state_);
+  point_list = planner_->whereToExplore(current_pose, move_client_goal_.target_pose.pose.position, previous_state_);
 
   if (point_list.size() != 0)
   {
@@ -280,10 +277,7 @@ void ExplorationServer::requestAndSendGoal()
       // send the goal to the move_base client
       feedback_.current_goal = next_goal;
       boost::unique_lock<boost::mutex> lock(move_client_lock_);
-      move_client_goal_.goal.goal_target_pose.clear();
-      move_client_goal_.goal.goal_target_pose.push_back(next_goal);
-      move_client_goal_.goal.navigation_type = move_client_goal_.goal.NAVIGATION_TYPE_POINT_TO_POINT;
-      move_client_goal_.goal.goal_target_type = move_client_goal_.goal.GOAL_TARGET_TYPE_CARTESIAN;
+      move_client_goal_.target_pose = next_goal;
       move_client_.sendGoal(move_client_goal_, boost::bind(&ExplorationServer::moveBaseFlexResultCb,
           this, _1, _2), 0, 0);
       moving_ = true;

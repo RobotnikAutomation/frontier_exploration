@@ -4,7 +4,7 @@ project(exploration_server)
 set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++14;-Wall;-Werror")
 
 
-find_package(catkin REQUIRED COMPONENTS actionlib costmap_2d exploration_msgs roscpp move_base_msgs tf robotnik_navigation_msgs)
+find_package(catkin REQUIRED COMPONENTS actionlib costmap_2d exploration_msgs roscpp move_base_msgs tf robotnik_navigation_msgs mbf_msgs)
 
 catkin_package(
   INCLUDE_DIRS include
