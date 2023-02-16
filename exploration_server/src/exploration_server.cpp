@@ -31,6 +31,7 @@ ExplorationServer::ExplorationServer(ros::NodeHandle nh, ros::NodeHandle private
                         false)
 {
   costmap_ros_ = boost::make_shared<costmap_2d::Costmap2DROS>("explore_costmap", tf2_buffer_);
+  clear_costmaps_srv_ = private_nh_.advertiseService("clear_costmaps", &ExplorationServer::clearCostmapsCb, this);
   explore_action_server_.start();
 }
 
@@ -143,31 +144,41 @@ void ExplorationServer::moveBaseFlexResultCb(const actionlib::SimpleClientGoalSt
         retry_ = 5;
         success_ = true;
         ROS_INFO("Move base succeeded");
+        moving_ = false;
+        
+        // regardless of whether the robot was successful in reaching the point or not,
+        // request the next goal from the plugin and send it to move_base
+        if (ExplorationServer::inBoundary())
+        {
+          ExplorationServer::requestAndSendGoal();
+        }
     }
     moving_ = false;
-
-    // regardless of whether the robot was successful in reaching the point or not,
-    // request the next goal from the plugin and send it to move_base
-    if (ExplorationServer::inBoundary())
-    {
-      ExplorationServer::requestAndSendGoal();
-    }
 }
 
 void ExplorationServer::cancelGoalCb(GoalHandle gh)
 {
-    {  // scope the lock
+    // {  // scope the lock
     // grab the move_client mutex, lock it, then cancel all move_base goals
-    boost::unique_lock<boost::mutex> lock(move_client_lock_);
-    move_client_.cancelGoalsAtAndBeforeTime(ros::Time::now());
-    lock.unlock();
-    }
+    // boost::unique_lock<boost::mutex> lock(move_client_lock_);
+    // move_client_.cancelGoalsAtAndBeforeTime(ros::Time::now());
+    move_client_.cancelAllGoals();
+    // lock.unlock();
+    // }
     ROS_WARN("Current exploration task cancelled");
     // set the GoalHandle as cancelled
     if (gh == active_gh_)
     {
       gh.setCanceled();
     }
+}
+
+bool ExplorationServer::clearCostmapsCb(std_srvs::Empty::Request &request,
+                                                       std_srvs::Empty::Response &response)
+{
+  // clear both costmaps
+  costmap_ros_->resetLayers();
+  return true;
 }
 
 bool ExplorationServer::inBoundary()
@@ -226,6 +237,7 @@ bool ExplorationServer::inBoundary()
       feedback_.current_goal = goal_pose;
       boost::unique_lock<boost::mutex> lock(move_client_lock_);
       move_client_goal_.target_pose = goal_pose;
+      ROS_INFO("HOLA DESDE inBoundary");
       move_client_.sendGoal(move_client_goal_, boost::bind(&ExplorationServer::moveBaseFlexResultCb, this, _1, _2), 0, 0);
       moving_ = true;
       lock.unlock();
@@ -278,6 +290,7 @@ void ExplorationServer::requestAndSendGoal()
       feedback_.current_goal = next_goal;
       boost::unique_lock<boost::mutex> lock(move_client_lock_);
       move_client_goal_.target_pose = next_goal;
+      ROS_INFO("HOLA DESDE requestAndSendGoal");
       move_client_.sendGoal(move_client_goal_, boost::bind(&ExplorationServer::moveBaseFlexResultCb,
           this, _1, _2), 0, 0);
       moving_ = true;

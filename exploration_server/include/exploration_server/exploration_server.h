@@ -51,6 +51,7 @@ class ExplorationServer
     actionlib::SimpleActionClient<mbf_msgs::MoveBaseAction> move_client_;
     actionlib::SimpleClientGoalState previous_state_;
     ExploreActionServer explore_action_server_;
+    ros::ServiceServer clear_costmaps_srv_;
     boost::mutex move_client_lock_;
     exploration_msgs::ExploreFeedback feedback_;
     mbf_msgs::MoveBaseGoal move_client_goal_;
@@ -98,6 +99,7 @@ class ExplorationServer
      */
     void cancelGoalCb(GoalHandle gh);
 
+    bool clearCostmapsCb(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
     /**
      * @brief Method to request the next goal from the planner plugin and send it to the move_base client
      */
