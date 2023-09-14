@@ -176,6 +176,7 @@ void ExplorationServer::cancelGoalCb(GoalHandle gh)
 bool ExplorationServer::clearCostmapsCb(std_srvs::Empty::Request &request,
                                                        std_srvs::Empty::Response &response)
 {
+  ROS_INFO("Clearing costmap");
   // clear both costmaps
   costmap_ros_->resetLayers();
   return true;
